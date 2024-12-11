@@ -18,16 +18,57 @@ const app = express();
 app.use(cors())
 app.use(express.json());
 
-app.get('/hotels', async (req, res) => {
+app.get('/search', async (req, res) => {
   const mongoClient = new MongoClient(DATABASE_URL);
   console.log('Connecting to MongoDB...');
+
+	const searchQuery = req.query.q as string || '';
+
+	if (!searchQuery) {
+		res.json({
+			hotels: [],
+			cities: [],
+			countries: []
+		});
+
+		return;
+	}
 
   try {
     await mongoClient.connect();
     console.log('Successfully connected to MongoDB!');
     const db = mongoClient.db()
-    const collection = db.collection('hotels');
-    res.send(await collection.find().toArray())
+
+		const hotelsQuery = {
+			$or: [
+				{ hotel_name: { $regex: searchQuery, $options: 'i' } },
+				{ chain_name: { $regex: searchQuery, $options: 'i' } },
+				{ city: { $regex: searchQuery, $options: 'i' } },
+				{ country: { $regex: searchQuery, $options: 'i' } },
+			]
+		};
+
+		const citiesQuery = {
+			name: { $regex: searchQuery, $options: 'i' }
+		};
+
+		const countriesQuery = {
+			country: { $regex: searchQuery, $options: 'i' }
+		};
+
+		const [hotels, cities, countries] = await Promise.all([
+			db.collection('hotels').find(hotelsQuery).toArray(),
+			db.collection('cities').find(citiesQuery).toArray(),
+			db.collection('countries').find(countriesQuery).toArray(),
+		]);
+
+		const payload = {
+			hotels,
+			cities,
+			countries
+		};
+
+    res.send(payload);
   } finally {
     await mongoClient.close();
   }
