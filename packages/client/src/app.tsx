@@ -20,7 +20,7 @@ interface Country {
 	countryisocode: string,
 }
 
-interface searchResponse {
+interface SearchResponse {
 	hotels: Hotel[]
 	cities: City[],
 	countries: Country[]
@@ -31,7 +31,7 @@ const API_URL = codeSandboxHost ? `https://${codeSandboxHost}` : 'http://localho
 
 const fetchHotelsData = async (value: string) => {
   const searchResponse = await fetch(`${API_URL}/search?q=${value}`);
-  const searchData = (await searchResponse.json()) as searchResponse;
+  const searchData = (await searchResponse.json()) as SearchResponse;
 	return searchData;
 }
 
